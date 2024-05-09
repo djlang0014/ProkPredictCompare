@@ -1,4 +1,3 @@
-
 from pathlib import Path
 import re
 import statistics
@@ -16,6 +15,8 @@ def parseProdigal(genbankinfo):
         for line in file:
             if first and line.startswith("     CDS"):
                 location = re.search(r".*CDS             <([0-9]*)..([0-9]*)", line)
+                if not location:
+                    location = re.search(r".*CDS             ([0-9]*)..([0-9]*)", line)
                 currentPrediction = (location.group(1), location.group(2))
                 first = False
                 previous = True
@@ -51,13 +52,13 @@ def parseProdigal(genbankinfo):
     nomatch = [one for one in genbankinfo if all(one[1] != two[0] and one[2] != two[1] for two in prodigalinfo)]
 
     countinfo.append((len(genbankinfo)))
-    countinfo.append((len(prodigalinfo)))    
+    countinfo.append((len(prodigalinfo)))
     countinfo.append(len(exactmatches))
     countinfo.append(len(fiveonly))
     countinfo.append(len(threeonly))
     countinfo.append(len(nomatch))
     #for CDS medians
-    lengths = [int(two[1]) - int(two[0]) for two in prodigalinfo if two[0] != '' and two[1] != '']
+    lengths = [abs(int(two[1]) - int(two[0])) for two in prodigalinfo if two[0] != '' and two[1] != '']
     countinfo.append(statistics.median(lengths))
 
     finallist = sorted(exactmatches + fiveonly + threeonly + nomatch, key=lambda x: x[0])
@@ -71,7 +72,7 @@ def parseGlimmer(genbankinfo):
         for line in file:
             if line.startswith(">"):
                 continue
-            
+
             #captures the location of the gene, skips reading frame info at start
             location = re.search(r"\s*\d+\s+(\d+)\s+(\d+)", line)
             if location:
@@ -84,13 +85,13 @@ def parseGlimmer(genbankinfo):
 
     countinfo = []
     countinfo.append((len(genbankinfo)))
-    countinfo.append((len(glimmerinfo)))    
+    countinfo.append((len(glimmerinfo)))
     countinfo.append(len(exactmatches))
     countinfo.append(len(fiveonly))
     countinfo.append(len(threeonly))
     countinfo.append(len(nomatch))
     #for CDS medians
-    lengths = [int(two[1]) - int(two[0]) for two in glimmerinfo if two[0] != '' and two[1] != '']
+    lengths = [abs(int(two[1]) - int(two[0])) for two in glimmerinfo if two[0] != '' and two[1] != '']
     countinfo.append(statistics.median(lengths))
 
     finallist = sorted(exactmatches + fiveonly + threeonly + nomatch, key=lambda x: x[0])
@@ -120,13 +121,13 @@ def parseMGA(genbankinfo):
 
     countinfo = []
     countinfo.append((len(genbankinfo)))
-    countinfo.append((len(mgainfo)))    
+    countinfo.append((len(mgainfo)))
     countinfo.append(len(exactmatches))
     countinfo.append(len(fiveonly))
     countinfo.append(len(threeonly))
     countinfo.append(len(nomatch))
     #for CDS medians
-    lengths = [int(two[1]) - int(two[0]) for two in mgainfo if two[0] != '' and two[1] != '']
+    lengths = [abs(int(two[1]) - int(two[0])) for two in mgainfo if two[0] != '' and two[1] != '']
     countinfo.append(statistics.median(lengths))
 
     finallist = sorted(exactmatches + fiveonly + threeonly + nomatch, key=lambda x: x[0])
@@ -158,14 +159,14 @@ def parseFGS(genbankinfo):
 
     countinfo = []
     countinfo.append((len(genbankinfo)))
-    countinfo.append((len(fgsinfo)))    
+    countinfo.append((len(fgsinfo)))
     countinfo.append(len(exactmatches))
     countinfo.append(len(fiveonly))
     countinfo.append(len(threeonly))
     countinfo.append(len(nomatch))
     #for CDS medians
-    lengths = [int(two[1]) - int(two[0]) for two in fgsinfo if two[0] != '' and two[1] != '']
+    lengths = [abs(int(two[1]) - int(two[0])) for two in fgsinfo if two[0] != '' and two[1] != '']
     countinfo.append(statistics.median(lengths))
 
-    finallist = sorted(exactmatches + fiveonly + threeonly + nomatch, key=lambda x: x[0])    
+    finallist = sorted(exactmatches + fiveonly + threeonly + nomatch, key=lambda x: x[0])
     return finallist, countinfo

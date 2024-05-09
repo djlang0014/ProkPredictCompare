@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8" />
-    <title>Final Project</title>
+    <title>Lang Final Project</title>
     <!--[if IE]>
     <script src="http://html5shiv.googlecode.com/svn/trunk/html5.js"></script>
     <![endif]-->
@@ -22,7 +22,7 @@
 
 <body id="home">
   <canvas id="myChart"></canvas>
-    
+
   <script>
     Chart.register(ChartDataLabels);
     //gets the info from CGI send over, converts to json for chart.js
@@ -33,7 +33,7 @@
     var accession = "{{accession}}";
 
       var data = {
-        labels: ['% Genes Detected', '% Extra Predictions', '% Perfect Match', 'Median Diff (NTs)', '% 3 Match', '% 5 Match', '% No Match'],
+        labels: ['% Genes Detected', '% Extra Predictions', '% Perfect Match', 'Median CDS Difference (NTs)', '% 3 Match', '% 5 Match', '% No Match'],
         datasets: [{
             label: 'Prodigal',
             data: prodigalInfo,
@@ -66,9 +66,7 @@
                   },
                   datalabels: {
                       color: '#000000',
-                      display: function(context) {
-                          return context.dataset.data[context.dataIndex] !== 0;  // display labels for non-zero data points
-                      },
+                      display: true,  // always display labels
                       anchor: 'end',
                       align: 'top',
                       formatter: function(value, context) {

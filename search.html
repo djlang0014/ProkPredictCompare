@@ -1,21 +1,23 @@
 <!DOCTYPE html>
-    <html lang="en">
-    
-    <head>
-        <meta charset="utf-8" />
-        <title>CDS Identification Comparison</title>
-        <!--[if IE]>
-        <script src="http://html5shiv.googlecode.com/svn/trunk/html5.js"></script>
-        <![endif]-->
-    </head>
-    
-    <body id="home">
-        <h1>Gene Search Form</h1>
+<html lang="en">
 
-        <form name='search_genes' method='post' action='./run_comparison.cgi' >
-            <label for="accession">Accession #</label>
-            <input id = "accession" type = "text" name = "accession" placeholder = "Enter Accession Number">
-            <input type="submit" value="Submit">
-        </form>
-    </body>
+<head>
+    <meta charset="utf-8" />
+    <title>Prokaryotic Gene Prediction Tool Comparison</title>
+    <!--[if IE]>
+    <script src="http://html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+</head>
+
+<body id="home">
+    <h1>Prokayotic Gene Prediction Tool Comparison</h1>
+    <p>This tool is designed to compare the prokaryotic CDS prediction of Prodigal, Glimmer, FragGeneScan, and MetaGeneAnnotator.
+       To find RefSeq or GenBank Assembly Identifiers (GCF_# or GCA_#), visit <a href="https://www.ncbi.nlm.nih.gov/datasets/" target="_blank">NCBI Datasets</a>.</p>
+
+    <form name='search_genes' method='post' action='./run_comparison.cgi' onsubmit="return confirm('This process may several minutes. Do you want to continue?');">
+        <label for="accession">Accession #</label>
+        <input id = "accession" type = "text" name = "accession" placeholder = "Enter Accession Number">
+        <input type="submit" value="Submit">
+    </form>
+</body>
 </html>

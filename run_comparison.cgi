@@ -11,7 +11,7 @@ import statistics
 #CGI form
 form = cgi.FieldStorage()
 accession = form.getvalue('accession')
-accession = "GCF_000008865"
+accession = accession.strip() #remove any leading/trailing white space
 
 #This line tells the template loader where to search for template files
 templateLoader = jinja2.FileSystemLoader(searchpath="./templates")
@@ -23,11 +23,7 @@ template = env.get_template('output.html')
 conn = mysql.connector.connect(user='dlang15', password='Bioinformatics!',
                                host='localhost', database='dlang15_final')
 curs = conn.cursor()
-subprocess.run("touch info.txt",shell=True,stdout=subprocess.PIPE)
-subprocess.run("chmod 777 info.txt",shell=True,stdout=subprocess.PIPE)
-store = open("info.txt", "w")
-store.write(accession)
-store.close()
+
 qry = """
 SELECT GenesNum, ProdigalInfo, GlimmerInfo, FGSInfo, MGAInfo, MedianLength FROM Results
 WHERE AccessionNum = %s
@@ -52,6 +48,19 @@ if not results:
 
     #Retrieve the genome data from NCBI
     retrievecommand = f"./datasets download genome accession {accession} --include gff3,genome"
+    try:
+        response = subprocess.check_output(['./datasets', 'download', 'genome', 'accession', accession])
+    except subprocess.CalledProcessError as e:
+        # The command failed, which might mean the accession number is invalid.
+        # You might need to check e.returncode or e.output to be sure.
+        error_message = "The provided accession is not correct."
+        print('Content-Type: text/html\n\n')
+        print(f'<html><body><h1>{error_message}</h1></body></html>') if error_message else print('<html><body><h1>All good!</h1></body></html>')
+        exit()
+    else:
+        subprocess.run("rm -f ncbi_dataset.zip", shell=True,stdout=subprocess.PIPE)
+
+
     subprocess.run(retrievecommand, shell=True,stdout=subprocess.PIPE)
     subprocess.run("chmod 777 ncbi_dataset.zip", shell=True,stdout=subprocess.PIPE)
     subprocess.run("unzip ncbi_dataset.zip", shell=True,stdout=subprocess.PIPE)
@@ -96,9 +105,9 @@ if not results:
                 else:
                     continue
 
-    median_cds_length = statistics.median(cds_lengths)
+    median_cds = statistics.median(cds_lengths)
     #Set the commands for the programs
-    commandMGA = f"/var/www/html/dlang15/final/mga_linux_ia64 {sequenceFile}"                                   
+    commandMGA = f"/var/www/html/dlang15/final/mga_linux_ia64 {sequenceFile}"
     commandGlimmer = f"/var/www/html/dlang15/final/glimmer3.02/bin/g3-from-scratch.csh {sequenceFile} glimmeroutput"
     commandFGS = f"/var/www/html/dlang15/final/FragGeneScan-master/run_FragGeneScan.pl -genome={sequenceFile} -out=FRAGout -complete=1 -train=complete"
     commandProdigal = f"/var/www/html/dlang15/final/prodigal -i {sequenceFile} -o prodigaloutput.gbk"
@@ -133,7 +142,7 @@ if not results:
         prodigal_prediction = (prodigalaccessionFix, predictionID, prodigal_start, prodigal_stop)
         curs.execute(qry, prodigal_prediction)
     conn.commit()
-    
+
     qry = """
     INSERT INTO FGSPredictions (AccessionNum, PredictionID, Start, Stop)
     VALUES (%s, %s, %s, %s)
@@ -171,25 +180,22 @@ if not results:
     INSERT INTO Results (AccessionNum, GenesNum, ProdigalInfo, GlimmerInfo, FGSInfo, MGAInfo, MedianLength)
     VALUES (%s, %s, %s, %s, %s, %s, %s)
     """
-    
+
     GenesNum = len(genbankinfo)
     ProdigalInfo = json.dumps(prodigalCount)
     GlimmerInfo = json.dumps(glimmerCount)
     FGSInfo = json.dumps(fgsCount)
     MGAInfo = json.dumps(mgaCount)
-    data_results = (accessionNumStore, GenesNum, ProdigalInfo, GlimmerInfo, FGSInfo, MGAInfo, median_cds_length)
+    data_results = (accessionNumStore, GenesNum, ProdigalInfo, GlimmerInfo, FGSInfo, MGAInfo, median_cds)
     curs.execute(qry, data_results)
     conn.commit()
 
-    #subprocess.run("rm -f FRAG*",shell=True,stdout=subprocess.PIPE)
-    #subprocess.run("rm -f glimmeroutput.*",shell=True,stdout=subprocess.PIPE)
-    #subprocess.run("rm -f MGAout",shell=True,stdout=subprocess.PIPE)
-    #subprocess.run("rm -f prodigaloutput.gbk",shell=True,stdout=subprocess.PIPE)
-    #subprocess.run("rm -f sequence.fna",shell=True,stdout=subprocess.PIPE)
-    #subprocess.run("rm -f genomic.gff",shell=True,stdout=subprocess.PIPE)
-
-    #subprocess.run("rm -f sequence.fna",shell=True,stdout=subprocess.PIPE)
-    #subprocess.run("rm -f genomic.gff",shell=True,stdout=subprocess.PIPE)
+    subprocess.run("rm -f FRAG*",shell=True,stdout=subprocess.PIPE)
+    subprocess.run("rm -f glimmeroutput.*",shell=True,stdout=subprocess.PIPE)
+    subprocess.run("rm -f MGAout",shell=True,stdout=subprocess.PIPE)
+    subprocess.run("rm -f prodigaloutput.gbk",shell=True,stdout=subprocess.PIPE)
+    subprocess.run("rm -f sequence.fna",shell=True,stdout=subprocess.PIPE)
+    subprocess.run("rm -f genomic.gff",shell=True,stdout=subprocess.PIPE)
 else:
     #We have the results from the check query
     GenesNum = results[0][0]
@@ -198,8 +204,8 @@ else:
     prodigalCount = json.loads(results[0][3])
     mgaCount = json.loads(results[0][4])
     median_cds = results[0][5]
-    
-    
+
+
 #These are now holding a list of # of gff genes, # of predictions, # of exact matches, # of 5' matches, # of 3' matches, # of no matches
 fgsGenesDectected = ((fgsCount[2] + fgsCount[3] + fgsCount[4]) / fgsCount[0]) * 100
 glimmerGenesDectected = ((glimmerCount[2] + glimmerCount[3] + glimmerCount[4]) / glimmerCount[0]) * 100
@@ -213,10 +219,10 @@ fgsPerfectMatch = (fgsCount[2] / fgsCount[0]) * 100
 glimmerPerfectMatch = (glimmerCount[2] / glimmerCount[0]) * 100
 prodigalPerfectMatch = (prodigalCount[2] / prodigalCount[0]) * 100
 mgaPerfectMatch = (mgaCount[2] / mgaCount[0]) * 100
-prodigalMedianDiff = abs(median_cds - prodigalCount[6]) 
-glimmerMedianDiff = abs(median_cds - glimmerCount[6]) 
-fgsMedianDiff = abs(median_cds - fgsCount[6]) 
-mgaMedianDiff = abs(median_cds - mgaCount[6]) 
+prodigalMedianDiff = abs(median_cds - prodigalCount[6])
+glimmerMedianDiff = abs(median_cds - glimmerCount[6])
+fgsMedianDiff = abs(median_cds - fgsCount[6])
+mgaMedianDiff = abs(median_cds - mgaCount[6])
 prodigal3Match = (prodigalCount[4] / prodigalCount[0]) * 100
 glimmer3Match = (glimmerCount[4] / glimmerCount[0]) * 100
 fgs3Match = (fgsCount[4] / fgsCount[0]) * 100
