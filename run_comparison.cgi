@@ -36,7 +36,7 @@ if not results:
     accessionNumStore = accession
     #Removes files made from previous runs
     #I add perms to final because they disappeared once and I debugged for multiple hours
-    subprocess.run("chmod 777 /var/www/html/dlang15/final",shell=True,stdout=subprocess.PIPE)
+    subprocess.run("chmod 777 ../",shell=True,stdout=subprocess.PIPE)
     subprocess.run("rm -f FRAG*",shell=True,stdout=subprocess.PIPE)
     subprocess.run("rm -f glimmeroutput.*",shell=True,stdout=subprocess.PIPE)
     subprocess.run("rm -f MGAout",shell=True,stdout=subprocess.PIPE)
@@ -107,10 +107,10 @@ if not results:
 
     median_cds = statistics.median(cds_lengths)
     #Set the commands for the programs
-    commandMGA = f"/var/www/html/dlang15/final/mga_linux_ia64 {sequenceFile}"
-    commandGlimmer = f"/var/www/html/dlang15/final/glimmer3.02/bin/g3-from-scratch.csh {sequenceFile} glimmeroutput"
-    commandFGS = f"/var/www/html/dlang15/final/FragGeneScan-master/run_FragGeneScan.pl -genome={sequenceFile} -out=FRAGout -complete=1 -train=complete"
-    commandProdigal = f"/var/www/html/dlang15/final/prodigal -i {sequenceFile} -o prodigaloutput.gbk"
+    commandMGA = f"./mga_linux_ia64 {sequenceFile}"
+    commandGlimmer = f"./glimmer3.02/bin/g3-from-scratch.csh {sequenceFile} glimmeroutput"
+    commandFGS = f"./FragGeneScan-master/run_FragGeneScan.pl -genome={sequenceFile} -out=FRAGout -complete=1 -train=complete"
+    commandProdigal = f"./prodigal -i {sequenceFile} -o prodigaloutput.gbk"
 
     #Run the programs + give necessary perms
     subprocess.run(commandProdigal,shell=True,stdout=subprocess.PIPE)
