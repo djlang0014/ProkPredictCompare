@@ -1,32 +1,83 @@
 <!DOCTYPE html>
-    <html lang="en">
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>Final Project</title>
+    <!--[if IE]>
+    <script src="http://html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <!-- Include the Chart.js library -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
+    <style>
+        td {
+          border: 1px solid rgb(80,80,80);
+          padding: 3px;
+        }
+        table {
+          border-collapse: collapse;
+        }
+    </style>
+</head>
+
+<body id="home">
+  <canvas id="myChart"></canvas>
     
-    <head>
-        <meta charset="utf-8" />
-        <title>Midterm Project</title>
-        <!--[if IE]>
-        <script src="http://html5shiv.googlecode.com/svn/trunk/html5.js"></script>
-        <![endif]-->
-        <style>
-            td {
-              border: 1px solid rgb(80,80,80);
-              padding: 3px;
-            }
-            table {
-              border-collapse: collapse;
-            }
-        </style>
-    </head>
-    
-    <body id="home">
-        <h1>GenBank vs Prodigal Comparison</h1>
-        <p>Count of Reference Genes/CDS = {{prodigalCount[0]}}</p>
-        <p>Count of Prodigal Predicted Genes = {{prodigalCount[1]}}</p>
-        <p>Count of Exact Coordinate Matches = {{prodigalCount[2]}}</p>
-        <p>Count of 5 Only Matches = {{prodigalCount[3]}}</p>
-        <p>Count of 3 Only Matches = {{prodigalCount[4]}}</p>
-        <p>Count of Reference Genes with Neither 5 or 3 Match = {{prodigalCount[5]}}</p>
-    </body>
+  <script>
+    Chart.register(ChartDataLabels);
+    //gets the info from CGI send over, converts to json for chart.js
+    var prodigalInfo = {{prodigalInfo|tojson|safe}};
+    var glimmerInfo = {{glimmerInfo|tojson|safe}};
+    var fgsInfo = {{fgsInfo|tojson|safe}};
+    var mgaInfo = {{mgaInfo|tojson|safe}};
+    var accession = "{{accession}}";
+
+      var data = {
+        labels: ['% Genes Detected', '% Extra Predictions', '% Perfect Match', 'Median Diff (NTs)', '% 3 Match', '% 5 Match', '% No Match'],
+        datasets: [{
+            label: 'Prodigal',
+            data: prodigalInfo,
+            backgroundColor: 'rgba(255, 99, 132, 0.2)', // Red
+        }, {
+            label: 'Glimmer',
+            data: glimmerInfo,
+            backgroundColor: 'rgba(75, 192, 192, 0.2)', // Green
+        }, {
+            label: 'FGS',
+            data: fgsInfo,
+            backgroundColor: 'rgba(255, 206, 86, 0.2)', // Yellow
+        }, {
+            label: 'MGA',
+            data: mgaInfo,
+            backgroundColor: 'rgba(153, 102, 255, 0.2)', // Purple
+        }]
+      };
+
+      var ctx = document.getElementById('myChart').getContext('2d');
+      var myChart = new Chart(ctx, {
+          type: 'bar',
+          data: data,
+          options: {
+              responsive: true,
+              plugins: {
+                  title: {
+                      display: true,
+                      text: accession + ' prediction metrics'
+                  },
+                  datalabels: {
+                      color: '#000000',
+                      display: function(context) {
+                          return context.dataset.data[context.dataIndex] !== 0;  // display labels for non-zero data points
+                      },
+                      anchor: 'end',
+                      align: 'top',
+                      formatter: function(value, context) {
+                          return value.toFixed(2);
+                      }
+                  }
+              }
+          }
+      });
+  </script>
+</body>
 </html>
-
-

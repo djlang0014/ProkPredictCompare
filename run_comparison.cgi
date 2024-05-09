@@ -5,8 +5,8 @@ import cgi
 from pathlib import Path
 import ParseOutputs
 import mysql.connector
-#import output
 import json
+import statistics
 
 #CGI form
 form = cgi.FieldStorage()
@@ -29,7 +29,7 @@ store = open("info.txt", "w")
 store.write(accession)
 store.close()
 qry = """
-SELECT GenesNum, ProdigalInfo, GlimmerInfo, FGSInfo, MGAInfo FROM Results
+SELECT GenesNum, ProdigalInfo, GlimmerInfo, FGSInfo, MGAInfo, MedianLength FROM Results
 WHERE AccessionNum = %s
 """
 curs.execute(qry, (accession,))
@@ -66,7 +66,8 @@ if not results:
 
     gffFile = Path('./genomic.gff')
     sequenceFile = Path('./sequence.fna')
-
+    #will store median CDS length
+    cds_lengths = []
     genbankinfo = []
     genenum = 1
 
@@ -89,10 +90,13 @@ if not results:
                     finalinfo = (accessionNum, chromStart, chromEnd)
                     genbankinfo.append(finalinfo)
                     genenum += 1
+                    cds_length = int(chromEnd) - int(chromStart)
+                    cds_lengths.append(cds_length)
                     #This finds the name of the gene from the attributes column of the gff file
                 else:
                     continue
 
+    median_cds_length = statistics.median(cds_lengths)
     #Set the commands for the programs
     commandMGA = f"/var/www/html/dlang15/final/mga_linux_ia64 {sequenceFile}"                                   
     commandGlimmer = f"/var/www/html/dlang15/final/glimmer3.02/bin/g3-from-scratch.csh {sequenceFile} glimmeroutput"
@@ -164,8 +168,8 @@ if not results:
     conn.commit()
 
     qry = """
-    INSERT INTO Results (AccessionNum, GenesNum, ProdigalInfo, GlimmerInfo, FGSInfo, MGAInfo)
-    VALUES (%s, %s, %s, %s, %s, %s)
+    INSERT INTO Results (AccessionNum, GenesNum, ProdigalInfo, GlimmerInfo, FGSInfo, MGAInfo, MedianLength)
+    VALUES (%s, %s, %s, %s, %s, %s, %s)
     """
     
     GenesNum = len(genbankinfo)
@@ -173,7 +177,7 @@ if not results:
     GlimmerInfo = json.dumps(glimmerCount)
     FGSInfo = json.dumps(fgsCount)
     MGAInfo = json.dumps(mgaCount)
-    data_results = (accessionNumStore, GenesNum, ProdigalInfo, GlimmerInfo, FGSInfo, MGAInfo)
+    data_results = (accessionNumStore, GenesNum, ProdigalInfo, GlimmerInfo, FGSInfo, MGAInfo, median_cds_length)
     curs.execute(qry, data_results)
     conn.commit()
 
@@ -189,15 +193,49 @@ if not results:
 else:
     #We have the results from the check query
     GenesNum = results[0][0]
-    FGSInfo = json.loads(results[0][1])
-    GlimmerInfo = json.loads(results[0][2])
-    ProdigalInfo = json.loads(results[0][3])
-    MGAInfo = json.loads(results[0][4])
+    fgsCount = json.loads(results[0][1])
+    glimmerCount = json.loads(results[0][2])
+    prodigalCount = json.loads(results[0][3])
+    mgaCount = json.loads(results[0][4])
+    median_cds = results[0][5]
+    
+    
+#These are now holding a list of # of gff genes, # of predictions, # of exact matches, # of 5' matches, # of 3' matches, # of no matches
+fgsGenesDectected = ((fgsCount[2] + fgsCount[3] + fgsCount[4]) / fgsCount[0]) * 100
+glimmerGenesDectected = ((glimmerCount[2] + glimmerCount[3] + glimmerCount[4]) / glimmerCount[0]) * 100
+prodigalGenesDectected = ((prodigalCount[2] + prodigalCount[3] + prodigalCount[4]) / prodigalCount[0]) * 100
+mgaGenesDectected = ((mgaCount[2] + mgaCount[3] + mgaCount[4]) / mgaCount[0]) * 100
+fgsExtraPrediction = ((fgsCount[1] - fgsCount[0]) / fgsCount[0]) * 100
+glimmerExtraPrediction = ((glimmerCount[1] - glimmerCount[0]) / glimmerCount[0]) * 100
+prodigalExtraPrediction = ((prodigalCount[1] - prodigalCount[0]) / prodigalCount[0]) * 100
+mgaExtraPrediction = ((mgaCount[1] - mgaCount[0]) / mgaCount[0]) * 100
+fgsPerfectMatch = (fgsCount[2] / fgsCount[0]) * 100
+glimmerPerfectMatch = (glimmerCount[2] / glimmerCount[0]) * 100
+prodigalPerfectMatch = (prodigalCount[2] / prodigalCount[0]) * 100
+mgaPerfectMatch = (mgaCount[2] / mgaCount[0]) * 100
+prodigalMedianDiff = abs(median_cds - prodigalCount[6]) 
+glimmerMedianDiff = abs(median_cds - glimmerCount[6]) 
+fgsMedianDiff = abs(median_cds - fgsCount[6]) 
+mgaMedianDiff = abs(median_cds - mgaCount[6]) 
+prodigal3Match = (prodigalCount[4] / prodigalCount[0]) * 100
+glimmer3Match = (glimmerCount[4] / glimmerCount[0]) * 100
+fgs3Match = (fgsCount[4] / fgsCount[0]) * 100
+mga3Match = (mgaCount[4] / mgaCount[0]) * 100
+prodigal5Match = (prodigalCount[3] / prodigalCount[0]) * 100
+glimmer5Match = (glimmerCount[3] / glimmerCount[0]) * 100
+fgs5Match = (fgsCount[3] / fgsCount[0]) * 100
+mga5Match = (mgaCount[3] / mgaCount[0]) * 100
+prodigalNoMatch = (prodigalCount[5] / prodigalCount[0]) * 100
+glimmerNoMatch = (glimmerCount[5] / glimmerCount[0]) * 100
+fgsNoMatch = (fgsCount[5] / fgsCount[0]) * 100
+mgaNoMatch = (mgaCount[5] / mgaCount[0]) * 100
 
-    #These are now holding a list of # of gff genes, # of predictions, # of exact matches, # of 5' matches, # of 3' matches, # of no matches
-
+prodigalInfo = [prodigalGenesDectected, prodigalExtraPrediction, prodigalPerfectMatch, prodigalMedianDiff, prodigal3Match, prodigal5Match, prodigalNoMatch]
+glimmerInfo = [glimmerGenesDectected, glimmerExtraPrediction, glimmerPerfectMatch, glimmerMedianDiff, glimmer3Match, glimmer5Match, glimmerNoMatch]
+fgsInfo = [fgsGenesDectected, fgsExtraPrediction, fgsPerfectMatch, fgsMedianDiff, fgs3Match, fgs5Match, fgsNoMatch]
+mgaInfo = [mgaGenesDectected, mgaExtraPrediction, mgaPerfectMatch, mgaMedianDiff, mga3Match, mga5Match, mgaNoMatch]
 
 print("Content-type: text/html\n\n")
-print(template.render(prodigalCount = [GenesNum,FGSInfo,GlimmerInfo,ProdigalInfo,MGAInfo,6,7]))
+print(template.render(prodigalInfo = prodigalInfo, glimmerInfo = glimmerInfo, fgsInfo = fgsInfo, mgaInfo = mgaInfo, accession = accession))
 
 conn.close()

@@ -1,6 +1,7 @@
 
 from pathlib import Path
 import re
+import statistics
 
 def parseProdigal(genbankinfo):
     prodigalfile = Path('./prodigaloutput.gbk')
@@ -55,6 +56,9 @@ def parseProdigal(genbankinfo):
     countinfo.append(len(fiveonly))
     countinfo.append(len(threeonly))
     countinfo.append(len(nomatch))
+    #for CDS medians
+    lengths = [int(two[1]) - int(two[0]) for two in prodigalinfo if two[0] != '' and two[1] != '']
+    countinfo.append(statistics.median(lengths))
 
     finallist = sorted(exactmatches + fiveonly + threeonly + nomatch, key=lambda x: x[0])
     return finallist, countinfo
@@ -85,6 +89,9 @@ def parseGlimmer(genbankinfo):
     countinfo.append(len(fiveonly))
     countinfo.append(len(threeonly))
     countinfo.append(len(nomatch))
+    #for CDS medians
+    lengths = [int(two[1]) - int(two[0]) for two in glimmerinfo if two[0] != '' and two[1] != '']
+    countinfo.append(statistics.median(lengths))
 
     finallist = sorted(exactmatches + fiveonly + threeonly + nomatch, key=lambda x: x[0])
     return finallist, countinfo
@@ -118,6 +125,9 @@ def parseMGA(genbankinfo):
     countinfo.append(len(fiveonly))
     countinfo.append(len(threeonly))
     countinfo.append(len(nomatch))
+    #for CDS medians
+    lengths = [int(two[1]) - int(two[0]) for two in mgainfo if two[0] != '' and two[1] != '']
+    countinfo.append(statistics.median(lengths))
 
     finallist = sorted(exactmatches + fiveonly + threeonly + nomatch, key=lambda x: x[0])
     return finallist, countinfo
@@ -153,6 +163,9 @@ def parseFGS(genbankinfo):
     countinfo.append(len(fiveonly))
     countinfo.append(len(threeonly))
     countinfo.append(len(nomatch))
+    #for CDS medians
+    lengths = [int(two[1]) - int(two[0]) for two in fgsinfo if two[0] != '' and two[1] != '']
+    countinfo.append(statistics.median(lengths))
 
     finallist = sorted(exactmatches + fiveonly + threeonly + nomatch, key=lambda x: x[0])    
     return finallist, countinfo
