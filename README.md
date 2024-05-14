@@ -2,7 +2,7 @@
 
 Repo for Final Project.
 
-NOTE! I forgot to use a virtual environment, so the requirements may install extraneous packages. My bad.
+NOTE! I forgot to use a virtual environment, so the requirements may install extraneous packages.
 
 ### About
 
